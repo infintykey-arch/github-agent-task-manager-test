@@ -1,6 +1,7 @@
 package com.infintykey.taskwake
 
 import android.app.Application
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
@@ -19,7 +20,7 @@ class TaskWakeApplication : Application() {
                 NotificationManager.IMPORTANCE_DEFAULT,
             ).apply {
                 description = getString(R.string.reminder_channel_description)
-                lockscreenVisibility = NotificationManager.VISIBILITY_PRIVATE
+                lockscreenVisibility = Notification.VISIBILITY_PRIVATE
                 enableVibration(true)
             }
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)

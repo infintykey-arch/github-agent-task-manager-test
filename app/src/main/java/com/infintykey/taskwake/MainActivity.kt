@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
 
         taskContainer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val scroll = ScrollView(this).apply { isFillViewport = true }
-        scroll.addView(taskContainer, ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        scroll.addView(taskContainer, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         root.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
 
         val addButton = Button(this).apply {
@@ -139,7 +139,7 @@ class MainActivity : ComponentActivity() {
         }
         val titleInput = EditText(this).apply {
             hint = "عنوان المهمة"
-            singleLine = true
+            setSingleLine(true)
             textDirection = View.TEXT_DIRECTION_FIRST_STRONG
         }
         val descriptionInput = EditText(this).apply {

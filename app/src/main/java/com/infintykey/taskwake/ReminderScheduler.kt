@@ -12,10 +12,11 @@ object ReminderScheduler {
         if (task.id <= 0L || !TaskTimeRules.isFutureReminder(atMillis, System.currentTimeMillis())) return
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val reminderIntent = pendingIntent(context, task, PendingIntent.FLAG_UPDATE_CURRENT) ?: return
         alarmManager.setAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             atMillis,
-            pendingIntent(context, task, PendingIntent.FLAG_UPDATE_CURRENT),
+            reminderIntent,
         )
     }
 
