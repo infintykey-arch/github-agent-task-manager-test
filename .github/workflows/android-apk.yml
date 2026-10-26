@@ -49,7 +49,10 @@ jobs:
         id: verify-apk
         run: test -s app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Run Android instrumented tests on API 35 emulator
+      - name: Assemble Android instrumented test APK
+        run: gradle --no-daemon assembleDebugAndroidTest
+
+      - name: Run AndroidJUnitRunner directly on API 35 emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -60,11 +63,28 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           script: |
             set +e
-            gradle --no-daemon connectedDebugAndroidTest
+            adb install -r app/build/outputs/apk/debug/app-debug.apk > app-install.txt 2>&1
+            app_install_status=$?
+            cat app-install.txt
+            if [ "$app_install_status" -ne 0 ]; then
+              adb logcat -d -v threadtime > emulator-logcat.txt
+              exit "$app_install_status"
+            fi
+            adb install -r -t app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk > test-install.txt 2>&1
+            test_install_status=$?
+            cat test-install.txt
+            if [ "$test_install_status" -ne 0 ]; then
+              adb logcat -d -v threadtime > emulator-logcat.txt
+              exit "$test_install_status"
+            fi
+            adb shell am instrument -w -r com.infintykey.taskwake.test/androidx.test.runner.AndroidJUnitRunner > instrumentation-results.txt 2>&1
             test_status=$?
+            cat instrumentation-results.txt
             adb logcat -d -v threadtime > emulator-logcat.txt
-            echo "--- Android runtime and instrumentation diagnostics ---"
-            grep -E "FATAL EXCEPTION|AndroidRuntime|INSTRUMENTATION_STATUS|Process .* has died|Fatal signal|am_crash" emulator-logcat.txt | tail -n 300 || true
+            if ! grep -q "INSTRUMENTATION_CODE: 0" instrumentation-results.txt; then test_status=1; fi
+            if grep -Eq "INSTRUMENTATION_STATUS_CODE: -2|INSTRUMENTATION_FAILED|FAILURES!!!|No tests found" instrumentation-results.txt; then test_status=1; fi
+            echo "--- Android runtime diagnostics ---"
+            grep -E "FATAL EXCEPTION|AndroidRuntime|Process .* has died|Fatal signal|am_crash" emulator-logcat.txt | tail -n 300 || true
             exit "$test_status"
 
       - name: Upload Android test diagnostics
@@ -73,9 +93,10 @@ jobs:
         with:
           name: TaskWake-android-test-diagnostics
           path: |
+            app-install.txt
+            test-install.txt
+            instrumentation-results.txt
             emulator-logcat.txt
-            app/build/reports/androidTests/connected/debug/
-            app/build/outputs/androidTest-results/connected/debug/
           if-no-files-found: ignore
           retention-days: 14
 
