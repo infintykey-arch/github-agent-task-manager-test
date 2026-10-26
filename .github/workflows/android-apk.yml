@@ -42,6 +42,13 @@ jobs:
       - name: Run JVM unit tests
         run: gradle --no-daemon testDebugUnitTest
 
+      - name: Assemble installable debug APK
+        run: gradle --no-daemon assembleDebug
+
+      - name: Verify APK was produced
+        id: verify-apk
+        run: test -s app/build/outputs/apk/debug/app-debug.apk
+
       - name: Run Android instrumented tests on API 35 emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -51,15 +58,29 @@ jobs:
           profile: pixel_2
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
-          script: gradle --no-daemon connectedDebugAndroidTest
+          script: |
+            set +e
+            gradle --no-daemon connectedDebugAndroidTest
+            test_status=$?
+            adb logcat -d -v threadtime > emulator-logcat.txt
+            echo "--- Android runtime and instrumentation diagnostics ---"
+            grep -E "FATAL EXCEPTION|AndroidRuntime|INSTRUMENTATION_STATUS|Process .* has died|Fatal signal|am_crash" emulator-logcat.txt | tail -n 300 || true
+            exit "$test_status"
 
-      - name: Assemble installable debug APK
-        run: gradle --no-daemon assembleDebug
-
-      - name: Verify APK was produced
-        run: test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload Android test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaskWake-android-test-diagnostics
+          path: |
+            emulator-logcat.txt
+            app/build/reports/androidTests/connected/debug/
+            app/build/outputs/androidTest-results/connected/debug/
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload debug APK artifact
+        if: always() && steps.verify-apk.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: TaskWake-debug-apk
