@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">TaskWake</string>
+    <string name="reminder_channel_name">تذكيرات المهام</string>
+    <string name="reminder_channel_description">تنبيهات المهام التي يحين موعدها</string>
+</resources>
