@@ -28,7 +28,7 @@ interface TaskDao {
     suspend fun deleteById(taskId: Long)
 }
 
-@Database(entities = [TaskEntity::class], version = 1, exportSchema = false)
+@Database(entities = [TaskEntity::class], version = 2, exportSchema = false)
 abstract class TaskDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
 
@@ -40,7 +40,8 @@ abstract class TaskDatabase : RoomDatabase() {
                 context.applicationContext,
                 TaskDatabase::class.java,
                 "taskwake.db",
-            ).build().also { instance = it }
+            ).fallbackToDestructiveMigration()
+                .build().also { instance = it }
         }
     }
 }
